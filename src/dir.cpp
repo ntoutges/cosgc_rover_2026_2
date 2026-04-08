@@ -120,8 +120,8 @@ void dir_csch_tick() {
 
             // Read from registers (0x00 - 0x05) for X, Y readings and accumulate min/max readings for each axis
             Wire.beginTransmission(DIR_I2C_ADDR);
-            Wire.write(0x01); // STATUS
-            Wire.endTransmission(true);
+            Wire.write(0x00); // STATUS
+            Wire.endTransmission(false);
 
             Wire.requestFrom(DIR_I2C_ADDR, 6);
 

@@ -130,4 +130,21 @@ void _cli_steps_cmd(void*);
  */
 void _cli_pos_cmd(void*);
 
+/**
+ * @brief Command callback for the `mot` command
+ * 
+ * Available Subcommands:
+ * - `get`: Print the current power levels for the left and right motors (usage: `!mot get`)
+ * - `set`: Set the current power levels for the left and right motors (usage: `!mot set <left> <right>`)
+ * - `stop`: Stop the motors (usage: `!mot stop`)
+ * - `override`: Print whether the user is currently in control of the motors (usage: `!mot override`) or set whether the user is currently in control of the motors (usage: `!mot !override <true/false>`)
+ * - `!override`: Set whether the user is currently in control of the motors (usage: `!mot override <true/false>`)
+ * 
+ * - `ready`: Print whether the motors are ready to be controlled (usage: `!mot ready`)
+ * - `state`: Print the current state of the motor state machine (usage: `!mot state`)
+ * - `!state`: Print the current state of the motor state machine (usage: `!mot !state <state>`)
+ * - `pid`: Print the current PID values for the motors (usage: `!mot pid`)
+ */
+void _cli_mot_cmd(void*);
+
 #endif
