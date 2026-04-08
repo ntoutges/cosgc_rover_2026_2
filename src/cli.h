@@ -113,4 +113,21 @@ void _cli_dir_cmd(void*);
  */
 void _cli_steps_cmd(void*);
 
+/**
+ * @brief Command callback for the `pos` command
+ * 
+ * Available Subcommands:
+ * - `get`: Print the current position of the rover in a 2D plane,
+ * - `set`: Set the current position of the rover in a 2D plane (usage: `!pos set <x> <y>`)
+ * 
+ * - `ready`: Print whether the position module is ready to be read from (usage: `!pos ready`)
+ * - `state`: Print the current state of the position state machine (usage: `!pos state`)
+ * - `!state`: Print the current state of the position state machine (usage: `!pos !state <state>`)
+ * - `track`: Print out the number of position trackers
+ * - `!track`: Start tracking the position readings (usage: `!pos !track`)
+ * - `!untrack`: Stop tracking the position readings (usage: `!pos !untrack [# of readings to untrack]`)
+ * - `pid`: Print the current PID values for the position (usage: `!pos pid`)
+ */
+void _cli_pos_cmd(void*);
+
 #endif
