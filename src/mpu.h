@@ -26,8 +26,12 @@ typedef enum mpu_state_t {
     MPU_S_AUTOCAL_2   // Take autocal samples
 } mpu_state_t;
 
+#define MPU_S_MIN MPU_S_INIT
+#define MPU_S_MAX MPU_S_AUTOCAL_2
+
 extern mpu_state_t mpu_state;
 extern csch_curr_t mpu_proc;
+extern uint8_t mpu_trackers;
 
 /**
  * @brief The entrypoint into the MPU state machine, for use by the csch scheduling library

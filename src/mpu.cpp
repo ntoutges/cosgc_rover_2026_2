@@ -2,9 +2,9 @@
 
 mpu_state_t mpu_state = MPU_S_INIT; // State of the MPU state machine
 csch_curr_t mpu_proc; // Current process tracking the MPU
+uint8_t mpu_trackers = 0; // Number of processes tracking the MPU, up to 255
 
 mpu_cal_t  _mpu_cal = { 0, 0, 0, 0, 0, 0 }; // Calibration data
-uint8_t _mpu_trackers = 0; // Number of processes tracking the MPU, up to 255
 
 // Accumulated rotation about each axis, in the range [0, 360)
 float _mpu_rot_ac_x = 0;
@@ -74,7 +74,7 @@ void mpu_csch_tick() {
                 break;
             }
 
-            if (_mpu_trackers != 0) {
+            if (mpu_trackers != 0) {
                 mpu_state = MPU_S_TRACKING; // Start tracking the MPU if any processes are tracking it
                 csch_cqueue(0); // Queue next reading
                 break;
@@ -82,7 +82,7 @@ void mpu_csch_tick() {
             break;
 
         case MPU_S_TRACKING: {
-            if (_mpu_trackers == 0) {
+            if (mpu_trackers == 0) {
                 mpu_state = MPU_S_IDLE; // No processes are tracking the MPU, so stop tracking
                 break;
             }
@@ -261,22 +261,22 @@ void mpu_acc_reset(bool x, bool y, bool z) {
 
 
 void mpu_track() {
-    if (_mpu_trackers == 255) return; // Prevent overflow
+    if (mpu_trackers == 255) return; // Prevent overflow
 
     // Queue MPU process to start running again
-    if (_mpu_trackers == 0 && mpu_state == MPU_S_IDLE) {
+    if (mpu_trackers == 0 && mpu_state == MPU_S_IDLE) {
         csch_queue(mpu_proc.csch, mpu_proc.pid, 0); // Queue next reading immediately
         mpu_state = MPU_S_TRACKING; // Start tracking the MPU if this is the first tracker
     }
 
-    _mpu_trackers++;
+    mpu_trackers++;
 }
 
 void mpu_untrack() {
-    if (_mpu_trackers == 0) return; // Prevent underflows
+    if (mpu_trackers == 0) return; // Prevent underflows
     
-    _mpu_trackers--;
-    if (_mpu_trackers == 0 && mpu_state == MPU_S_TRACKING) {
+    mpu_trackers--;
+    if (mpu_trackers == 0 && mpu_state == MPU_S_TRACKING) {
         mpu_state = MPU_S_IDLE; // Stop tracking the MPU if there are no more trackers
     };
 }

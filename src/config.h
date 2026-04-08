@@ -21,3 +21,23 @@
 #define CLI_ENTRY_BUF_SIZE 8    // Number of commands that can be registered in the CLI
 #define CLI_BUF_BUF_SIZE 64     // Size of the buffer for incoming CLI commands
 #define CLI_MAX_TICK_PARSE 8    // Maximum number of characters to parse each tick
+
+#define STEPS_CSCH_TK_PERIOD 10  // Period of movement state machine, in ticks
+#define STEPS_LEFT_PIN A2        // Pin to measure steps for the left motor
+#define STEPS_RIGHT_PIN A3       // Pin to measure steps for the right motor
+#define STEPS_STEPS_PER_REV 200  // Number of steps per revolution of the motor
+                                 // Note that a step is used as a stand-in for mm
+#define STEPS_LEFT_REV 1         // Whether the left encoder is reversed
+#define STEPS_RIGHT_REV 0        // Whether the right encoder is reversed
+
+// Motor Control Pins
+// Convention: (+1, -2) corresponds to forward movement, (-1, +2) corresponds to backward movement
+#define MOT_PIN_L1 6            // Left motor control pin 1
+#define MOT_PIN_L2 5            // Left motor control pin 2
+#define MOT_PIN_R1 4            // Right motor control pin 1
+#define MOT_PIN_R2 3            // Right motor control pin 2
+
+#define MOT_PWM_L1 1            // Indicates that left motor control pin 1 is a PWM pin
+                                // If 0, the L2 pin will be considered the PWM pin
+#define MOT_PWM_R1 1            // Indicates that right motor control pin 1 is a PWM pin
+                                // If 0, the R2 pin will be considered the PWM pin

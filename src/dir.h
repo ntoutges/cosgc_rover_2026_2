@@ -26,8 +26,12 @@ typedef enum dir_state_t {
     DIR_S_AUTOCAL_2   // Take autocal samples
 } dir_state_t;
 
+#define DIR_S_MIN DIR_S_INIT
+#define DIR_S_MAX DIR_S_AUTOCAL_2
+
 extern csch_curr_t dir_proc;
 extern dir_state_t dir_state;
+extern uint8_t dir_trackers;
 
 /**
  * @brief The entrypoint into the direction state machine, for use by the csch scheduling library

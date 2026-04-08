@@ -22,6 +22,7 @@
 
 #include "mpu.h"
 #include "dir.h"
+#include "steps.h"
 
 #include "mot.h"
 
@@ -88,5 +89,28 @@ void _cli_mpu_cmd(void*);
  * - `pid`: Print the current PID values for the MPU (usage: `!mpu pid`)
  */
 void _cli_dir_cmd(void*);
+
+/**
+ * @brief Command callback for the `steps` command
+ * 
+ * Available Subcommands:
+ * - `acal`: Start/stop automatic calibration of the steps module (usage: `!steps acal <begin/end>`)
+ * - `cal`: Get the current calibration values of the steps module (usage: `!steps cal`)
+ * - `!cal`: Apply some set of calibration values to the steps module (usage: `!steps !cal <left_min> <left_max> <right_min> <right_max>`)
+ * - `read`: Print the current step counts for the left and right motors (usage: `!steps read`)
+ * - `raw`: Print the current raw readings from the motor encoders for the left and right motors (usage: `!steps raw`)
+ * - `reset`: Reset the step counts for the left and right motors (usage: `!steps !reset [-lr]`) (Defaults to both motors if no motors specified)
+ * - `coef`: Print the current efficiency coefficient for the steps (usage: `!steps coef`)
+ * - `!coef`: Set the efficiency coefficient for the steps (usage: `!steps !coef <coef>`)
+ * 
+ * - `ready`: Print whether the steps module is ready to be read from (usage: `!steps ready`)
+ * - `state`: Print the current state of the steps state machine (usage: `!steps state`)
+ * - `!state`: Print the current state of the steps state machine (usage: `!steps !state <state>`)
+ * - `track`: Print out the number of steps trackers
+ * - `!track`: Start tracking the steps readings (usage: `!steps !track`)
+ * - `!untrack`: Stop tracking the steps readings (usage: `!steps !untrack [# of readings to untrack]`)
+ * - `pid`: Print the current PID values for the steps (usage: `!steps pid`)
+ */
+void _cli_steps_cmd(void*);
 
 #endif

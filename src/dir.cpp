@@ -6,9 +6,9 @@ float _dir_gyro_heading(float x, float y, float z); // Get the current heading, 
 
 csch_curr_t dir_proc; // Current process tracking the compass
 dir_state_t dir_state = DIR_S_INIT; // State of the direction state machine
+uint8_t dir_trackers = 0; // Number of processes tracking the compass, up to 255
 
 dir_cal_t _dir_cal = { 0, 1, 0, 1 }; // Calibration data for the compass, which consists of minimum and maximum readings along each axis
-uint8_t _dir_trackers = 0; // Number of processes tracking the compass, up to 255
 
 bool _dir_magnetic = true; // Whether using magnetic readings from the QMC5883L compass (true) or rotational readings from the MPU6050 IMU (false)
 bool _dir_autocal_running = false; // Whether the automatic calibration process is currently running or not
@@ -51,7 +51,7 @@ void dir_csch_tick() {
                 break;
             }
 
-            if (_dir_trackers != 0 && _dir_magnetic) {
+            if (dir_trackers != 0 && _dir_magnetic) {
                 dir_state = DIR_S_TRACKING; // Start tracking the compass if any processes are tracking it
                 csch_cqueue(0); // Queue next reading
 
@@ -68,7 +68,7 @@ void dir_csch_tick() {
         case DIR_S_TRACKING: {
             csch_cqueue(DIR_CSCH_TK_PERIOD); // Queue next step immediately
 
-            if (_dir_trackers == 0 || !_dir_magnetic) {
+            if (dir_trackers == 0 || !_dir_magnetic) {
                 dir_state = DIR_S_IDLE; // No processes are tracking the compass, so stop tracking
 
                 // Start tracking MPU for relative rotational offsets
@@ -226,7 +226,7 @@ void dir_magnet_safe(bool safe) {
     _dir_magnetic = safe;
 
     if (safe) {
-        if (dir_state == DIR_S_IDLE && _dir_trackers != 0) {
+        if (dir_state == DIR_S_IDLE && dir_trackers != 0) {
             dir_state = DIR_S_TRACKING; // Start tracking the compass if currently idle
             csch_queue(dir_proc.csch, dir_proc.pid, 0); // Queue next reading immediately
         }
@@ -253,9 +253,9 @@ bool dir_magnet_safe_get() {
 }
 
 void dir_track() {
-    if (_dir_trackers == 255) return; // Prevent overflow
+    if (dir_trackers == 255) return; // Prevent overflow
 
-    if (_dir_trackers == 0) {
+    if (dir_trackers == 0) {
         if (dir_state == DIR_S_IDLE && _dir_magnetic) {
             csch_cqueue(0); // Queue next reading immediately
             dir_state = DIR_S_TRACKING; // Start tracking the compass if this is the first tracker
@@ -268,15 +268,15 @@ void dir_track() {
         }
     }
 
-    _dir_trackers++;
+    dir_trackers++;
 }
 
 void dir_untrack() {
-    if (_dir_trackers == 0) return; // Prevent underflow
+    if (dir_trackers == 0) return; // Prevent underflow
 
-    _dir_trackers--;
+    dir_trackers--;
 
-    if (_dir_trackers == 0) {
+    if (dir_trackers == 0) {
         if (dir_state == DIR_S_IDLE) {
             dir_state = DIR_S_IDLE; // Stop tracking the MPU if there are no more trackers
         }

@@ -12,7 +12,7 @@
  * @todo Create interface + implement
  */
 
-// #include <Arduino.h>
+#include <Arduino.h>
 #include <stdbool.h>
 #include "csch.h"
 #include "config.h"
@@ -20,15 +20,19 @@
 // -------- SCHEDULING --------
 
 typedef enum steps_state_t {
-    steps_S_INIT,     // Initialize direction module
-    steps_S_IDLE,     // Do nothing
-    steps_S_TRACKING, // Poll for readings
-    steps_S_AUTOCAL_1,  // Initialize autocal data
-    steps_S_AUTOCAL_2   // Take autocal samples
+    STEPS_S_INIT,       // Initializing steps module
+    STEPS_S_IDLE,       // Idle state
+    STEPS_S_TRACKING,   // Module is being used
+    STEPS_S_AUTOCAL_1,  // Initialize autocal data
+    STEPS_S_AUTOCAL_2   // Take autocal samples
 } steps_state_t;
+
+#define STEPS_S_MIN STEPS_S_INIT
+#define STEPS_S_MAX STEPS_S_TRACKING
 
 extern csch_curr_t steps_proc;
 extern steps_state_t steps_state;
+extern uint8_t steps_trackers;
 
 /**
  * @brief The entrypoint into the steps state machine, for use by the csch scheduling library
@@ -81,6 +85,7 @@ bool steps_ready();
 
 /**
  * @brief Get the current step counts for the left and right motors, to be used to determine distance traveled
+ * Note that this value is the result _after_ multiplying by the efficiency coefficient
  * 
  * @param left  The variable to store the current step count for the left motor
  * @param right The variable to store the current step count for the right motor
@@ -103,23 +108,22 @@ void steps_raw(int16_t* left, int16_t* right);
  */
 void steps_reset(bool left, bool right);
 
+/**
+ * @brief Define a coefficient of "effeciency". One measured step may not correspond to one unit of distance (due to slippage, etc.), so this coefficient can be used to adjust the observed step counts
+ * 
+ * @param coef  The coefficient to apply to the observed step counts (e.g. a value of 0.5 would mean that every observed step corresponds to 0.5 units of distance)
+ */
+void steps_coef(float coef);
+
+/**
+ * @brief Get the current efficiency coefficient
+ * 
+ * @return The current efficiency coefficient
+ */
+float steps_coef_get();
+
 
 // -------- CONTROL --------
-
-/**
- * @brief Indicate that the steps module is in a magnetically safe environment, which allows it to use the magnetometer readings for direction estimation.
- * Otherwise, the steps module will rely solely on accumulated gyroscope readings relative to the last "safe" measurement (Note that these relative readings are prone to drift)
- * 
- * @param safe Whether the steps module is in a magnetically safe environment or not
- */
-void steps_magnet_safe(bool safe);
-
-/**
- * @brief Get whether the steps module is in a magnetically safe environment or not
- * 
- * @return Whether the steps module is in a magnetically safe environment or not
- */
-bool steps_magnet_safe_get();
 
 /**
  * @brief Indicate that some process is listening to step readings.
@@ -135,5 +139,19 @@ void steps_track();
  * 
  */
 void steps_untrack();
+
+// -------- INTERNAL --------
+
+/**
+ * @brief Get the change in steps based on the change in raw readings from the motor, accounting for wraparound
+ * 
+ * @param raw   The new raw reading from the motor
+ * @param last  The last raw reading from the motor
+ * @param min   The minimum raw reading to expect from the motorbased on calibration
+ * @param max   The maximum raw reading to expect from the motor
+ * @return The change in steps (in range [-512, 511]) based on the change in raw readings, accounting for wraparound
+ * Note that this function assumes that the change in raw readings between two consecutive readings will not exceed 512 (half of the ADC range), which should be a safe assumption given the expected speed of the motors and the frequency of readings
+ */
+int16_t _steps_delta(uint16_t raw, uint16_t last, uint16_t min, uint16_t max);
 
 #endif
