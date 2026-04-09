@@ -98,6 +98,15 @@ bool dir_ready();
 float dir_heading();
 
 /**
+ * @brief Get the last valid raw readings from the compass module, which are the magnetometer readings if in a magnetically safe environment
+ * 
+ * @param x The container for the raw x-axis reading from the compass module
+ * @param y The container for the raw y-axis reading from the compass module
+ * @param z The container for the raw z-axis reading from the compass module
+ */
+void dir_raw(int16_t* x, int16_t* y, int16_t* z);
+
+/**
  * @brief Set the reference direction for the heading readings, which is the direction that will be considered as 0 degrees.
  * This value is relative to magnetic north.
  * By default, this is set to 0

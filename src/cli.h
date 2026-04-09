@@ -23,8 +23,8 @@
 #include "mpu.h"
 #include "dir.h"
 #include "steps.h"
-
 #include "mot.h"
+#include "pos.h"
 
 // -------- SCHEDULING --------
 
@@ -73,6 +73,7 @@ void _cli_mpu_cmd(void*);
  * - `cal`: Calibrate the DIR (usage: `!dir cal <x_min> <x_max> <y_min> <y_max>`)
  * - `!cal`: Apply some set of calibration values to the DIR (usage: `!dir !cal <x_min> <x_max> <y_min> <y_max> <z_min> <z_max>`)`
  * - `heading`: Print the current heading from the DIR (usage: `!dir heading`)
+ * - `raw`: Print the current raw readings from the DIR (usage: `!dir raw`)
  * - `ref`: Print the current reference direction for the DIR (usage: `!dir ref`)
  * - `!ref`: Set the reference direction for the DIR (usage: `!dir ref <heading>`)
  * - `orient`: Print the current orientation of the DIR (usage: `!dir orient`) or set the orientation of the DIR (usage: `!dir !orient <orientation>`)
@@ -146,5 +147,22 @@ void _cli_pos_cmd(void*);
  * - `pid`: Print the current PID values for the motors (usage: `!mot pid`)
  */
 void _cli_mot_cmd(void*);
+
+/**
+ * @brief Command callback for the `pos` command
+ * 
+ * Available Subcommands:
+ * - `get`: Print the current position of the rover in a 2D plane, relative to the starting position, in steps (mm) (usage: `!pos get`)
+ * - `set`: Set the current position of the rover in a 2D plane, relative to the starting position, in steps (mm) (usage: `!pos set <x> <y>`)
+ * 
+ * - `ready`: Print whether the position module is ready to be read from (usage: `!pos ready`)
+ * - `state`: Print the current state of the position state machine (usage: `!pos state`)
+ * - `!state`: Print the current state of the position state machine (usage: `!pos !state <state>`)
+ * - `track`: Print out the number of position trackers
+ * - `!track`: Start tracking the position readings (usage: `!pos !track`)
+ * - `!untrack`: Stop tracking the position readings (usage: `!pos !untrack [# of readings to untrack]`)
+ * - `pid`: Print the current PID values for the position (usage: `!pos pid`)
+ */
+void _cli_pos_cmd(void*);
 
 #endif

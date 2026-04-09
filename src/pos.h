@@ -12,9 +12,12 @@
  * 
  */
 
+#include <stdint.h>
+#include <math.h>
 #include "csch.h"
 #include "dir.h"
 #include "steps.h"
+#include "config.h"
 
 // -------- SCHEDULING --------
 
@@ -38,6 +41,13 @@ void pos_csch_tick();
 
 
 // -------- READING --------
+
+/**
+ * @brief Check if the position module is ready to be read from (i.e. it has been initialized and is not currently calibrating)
+ * 
+ * @return true iff the position module is ready to be read from
+ */
+bool pos_ready();
 
 /**
  * @brief Get the current position of the rover in a 2D plane, relative to the starting position, in steps (mm)

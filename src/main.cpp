@@ -4,6 +4,7 @@
 #include "mpu.h"
 #include "dir.h"
 #include "steps.h"
+#include "pos.h"
 
 #include "cli.h"
 
@@ -22,32 +23,14 @@ void setup() {
     csch_task_fork(&sched, dir_csch_tick);
     csch_task_fork(&sched, cli_csch_tick);
     csch_task_fork(&sched, steps_csch_tick);
+    csch_task_fork(&sched, pos_csch_tick);
 
-    mpu_cal((mpu_cal_t){
-        .ax = 339,
-        .ay = -73,
-        .az = -17913,
-        .gx = -1000,
-        .gy = 0,
-        .gz = 0
-    });
+    mpu_cal((mpu_cal_t){ 6797, -4173, -32768, -1155, 77, -60 });
 
-    dir_cal((dir_cal_t){
-        .x_min = (int16_t) (-0.35 * 15000.0),
-        .x_max = (int16_t) (-0.06 * 15000.0),
-        .y_min = (int16_t) (-1.04 * 15000.0),
-        .y_max = (int16_t) (-0.73 * 15000.0),
-        .z_min = (int16_t) (0.42 * 15000.0),
-        .z_max = (int16_t) (0.46 * 15000.0)
-    });
+    dir_cal((dir_cal_t){ -4155, 480, -6150, -1725, 5018, 6332 });
     dir_orient(DIR_O_XY);
 
-    steps_cal((steps_cal_t){
-        .left_min = 0,
-        .left_max = 884,
-        .right_min = 0,
-        .right_max = 884
-    });
+    steps_cal((steps_cal_t){ 0, 884, 0, 884 });
 
     move_ramp(100); // Set movement acceleration to 100 steps (mm) per second squared
 

@@ -172,7 +172,6 @@ void steps_reset(bool left, bool right) {
     if (left) _steps_ac_left = 0;
     if (right) _steps_ac_right = 0;
 }
-
 void steps_coef(float coef) {
     _steps_coef = coef;
 }
@@ -199,7 +198,7 @@ void steps_untrack() {
 
     steps_trackers--;
 
-    if (steps_trackers == 0) {
+    if (steps_trackers == 0 && steps_state == STEPS_S_TRACKING) {
         // No more trackers, go back to idle state
         steps_state = STEPS_S_IDLE;
     }

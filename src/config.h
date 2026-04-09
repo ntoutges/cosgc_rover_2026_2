@@ -22,13 +22,13 @@
 #define CLI_BUF_BUF_SIZE 64     // Size of the buffer for incoming CLI commands
 #define CLI_MAX_TICK_PARSE 8    // Maximum number of characters to parse each tick
 
-#define STEPS_CSCH_TK_PERIOD 10  // Period of movement state machine, in ticks
+#define STEPS_CSCH_TK_PERIOD 1   // Period of movement state machine, in ticks
 #define STEPS_LEFT_PIN A2        // Pin to measure steps for the left motor
 #define STEPS_RIGHT_PIN A3       // Pin to measure steps for the right motor
 #define STEPS_STEPS_PER_REV 200  // Number of steps per revolution of the motor
                                  // Note that a step is used as a stand-in for mm
-#define STEPS_LEFT_REV 1         // Whether the left encoder is reversed
-#define STEPS_RIGHT_REV 0        // Whether the right encoder is reversed
+#define STEPS_LEFT_REV 0         // Whether the left encoder is reversed
+#define STEPS_RIGHT_REV 1        // Whether the right encoder is reversed
 
 // Motor Control Pins
 // Convention: (+1, -2) corresponds to forward movement, (-1, +2) corresponds to backward movement
@@ -41,3 +41,13 @@
                                 // If 0, the L2 pin will be considered the PWM pin
 #define MOT_PWM_R1 1            // Indicates that right motor control pin 1 is a PWM pin
                                 // If 0, the R2 pin will be considered the PWM pin
+
+#define POS_CSCH_TK_PERIOD 1    // Period of position state machine, in ticks
+#define POS_WAIT_TK_PERIOD 100  // Period to wait for dir/steps modules to be ready before trying to track position, in ticks
+
+#define MOVE_CSCH_TK_PERIOD 1       // Period of movement state machine, in ticks
+#define MOVE_DER_BUCKETS 5          // Number of buckets to use for derivative smoothing for movement control; Smooths out derivative over the last n ms
+#define MOVE_DER_MS_PERIOD 5        // Period between ticks for updating the derivative buckets for movement control, in ms
+#define MOVE_MIN_PWM 40             // Default minimum PWM to overcome motor dead zone; 0 to disable
+#define MOVE_SYNC_KP 0              // Default proportional gain for left/right motor synchronization; 0 to disable
+#define MOVE_HEADING_TOL 5.0        // Default heading tolerance in degrees for rotate_to completion

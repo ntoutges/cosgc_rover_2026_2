@@ -15,6 +15,7 @@ void cli_csch_tick() {
             cmd_attach(&_cli_cmd, "dir", _cli_dir_cmd, NULL);
             cmd_attach(&_cli_cmd, "steps", _cli_steps_cmd, NULL);
             cmd_attach(&_cli_cmd, "mot", _cli_mot_cmd, NULL);
+            cmd_attach(&_cli_cmd, "pos", _cli_pos_cmd, NULL);
 
             csch_cqueue(CLI_CSCH_TK_PASSIVE); // Queue next tick in passive mode
             _cli_state = CLI_S_PASSIVE;
@@ -313,6 +314,19 @@ void _cli_dir_cmd(void*) {
     if (strcmp(subcmd, "heading") == 0) {
         Serial.print("=heading ");
         Serial.println(dir_heading());
+        return;
+    }
+
+    if (strcmp(subcmd, "raw") == 0) {
+        int16_t x, y, z;
+        dir_raw(&x, &y, &z);
+
+        Serial.print("=raw ");
+        Serial.print(x);
+        Serial.print(" ");
+        Serial.print(y);
+        Serial.print(" ");
+        Serial.println(z);
         return;
     }
 
@@ -703,4 +717,308 @@ void _cli_mot_cmd(void*) {
     }
 
     Serial.println("~Unknown mot subcommand");
+}
+
+void _cli_pos_cmd(void*) {
+    const char* subcmd = cmd_ogets(&_cli_cmd, 1, "");
+
+    if (strcmp(subcmd, "get") == 0) {
+        float x, y;
+        pos_get(&x, &y);
+
+        Serial.print("=get ");
+        Serial.print(x);
+        Serial.print(" ");
+        Serial.println(y);
+        return;
+    }
+
+    if (strcmp(subcmd, "set") == 0) {
+        float x = cmd_ogetf(&_cli_cmd, 2, 0);
+        float y = cmd_ogetf(&_cli_cmd, 3, 0);
+
+        pos_set(x, y);
+        Serial.println("=!set");
+        return;
+    }
+
+    if (strcmp(subcmd, "ready") == 0) {
+        Serial.print("=ready ");
+        Serial.println(pos_ready() ? "true" : "false");
+        return;
+    }
+
+    if (strcmp(subcmd, "state") == 0) {
+        Serial.print("=state ");
+        Serial.println(pos_state);
+        return;
+    }
+
+    if (strcmp(subcmd, "!state") == 0) {
+        int state = cmd_ogeti(&_cli_cmd, 2, 0);
+
+        if (state < POS_S_MIN || state > POS_S_MAX) {
+            Serial.println("~Invalid state argument");
+            return;
+        }
+
+        pos_state = (pos_state_t) state;
+        Serial.println("=!state");
+        return;
+    }
+
+    if (strcmp(subcmd, "track") == 0) {
+        Serial.print("=track ");
+        Serial.println(pos_trackers);
+        return;
+    }
+
+    if (strcmp(subcmd, "!track") == 0) {
+        pos_track();
+        Serial.println("=!track");
+        return;
+    }
+
+    if (strcmp(subcmd, "!untrack") == 0) {
+        pos_untrack();
+        Serial.println("=!untrack");
+        return;
+    }
+
+     if (strcmp(subcmd, "pid") == 0) {
+        Serial.print("=pid ");
+        Serial.println(pos_proc.pid);
+        return;
+    }
+
+    if (strcmp(subcmd, "pid") == 0) {
+        Serial.print("=pid ");
+        Serial.println(pos_proc.pid);
+        return;
+    }
+
+    Serial.println("~Unknown pos subcommand");
+}
+
+void _cli_move_cmd(void*) {
+    const char* subcmd = cmd_ogets(&_cli_cmd, 1, "");
+
+    if (strcmp(subcmd, "busy") == 0) {
+        Serial.print("=busy ");
+        Serial.println(move_busy() ? "true" : "false");
+        return;
+    }
+
+    if (strcmp(subcmd, "drive") == 0) {
+        float speed = cmd_ogetf(&_cli_cmd, 2, 0);
+        move_drive(speed);
+        Serial.println("=!drive");
+        return;
+    }
+
+    if (strcmp(subcmd, "driveby") == 0) {
+        int distance = cmd_ogeti(&_cli_cmd, 2, 0);
+        float speed = cmd_ogetf(&_cli_cmd, 3, 0);
+        move_drive_by(distance, speed);
+        Serial.println("=!driveby");
+        return;
+    }
+
+    if (strcmp(subcmd, "rotate") == 0) {
+        float speed = cmd_ogetf(&_cli_cmd, 2, 0);
+        move_rotate(speed);
+        Serial.println("=!rotate");
+        return;
+    }
+
+    if (strcmp(subcmd, "rotateto") == 0) {
+        float heading = cmd_ogetf(&_cli_cmd, 2, 0);
+        float speed = cmd_ogetf(&_cli_cmd, 3, 0);
+        move_rotate_to(heading, speed);
+        Serial.println("=!rotateto");
+        return;
+    }
+
+    if (strcmp(subcmd, "stop") == 0) {
+        bool force = cmd_ugetb(&_cli_cmd, "f", false);
+        move_stop(force);
+        Serial.println("=!stop");
+        return;
+    }
+
+    if (strcmp(subcmd, "ramp") == 0) {
+        float ramp = move_ramp_get();
+
+        Serial.print("=ramp ");
+        Serial.println(ramp);
+        return;
+    }
+
+    if (strcmp(subcmd, "!ramp") == 0) {
+        float accel = cmd_ogetf(&_cli_cmd, 2, 0);
+
+        move_ramp(accel);
+        Serial.println("=!ramp");
+        return;
+    }
+
+    if (strcmp(subcmd, "plan") == 0) {
+        const char* plan_str = cmd_ogets(&_cli_cmd, 2, "");
+
+        bool plan;
+        if (strcmp(plan_str, "true") == 0) {
+            plan = true;
+        }
+        else if (strcmp(plan_str, "false") == 0) {
+            plan = false;
+        }
+        else {
+            Serial.println("~Invalid plan argument (true/false)");
+            return;
+        }
+
+        move_plan(plan);
+        Serial.println("=!plan");
+        return;
+    }
+
+    if (strcmp(subcmd, "motors") == 0) {
+        bool left = cmd_ugetb(&_cli_cmd, "l", false);
+        bool right = cmd_ugetb(&_cli_cmd, "r", false);
+
+        if (!left && !right) {
+            left = true;
+            right = true;
+        }
+
+        move_mstate_t left_mstate;
+        move_mstate_t right_mstate;
+        move_motors_get(&left_mstate, &right_mstate);
+
+        // Print format: "<side>: (<initial>) - 0 - <acc_pos> - (max_speed) - <dec_pos> - <final_pos> - (0)"
+        // Print example (l: (0) - 0 - 100 - (100) - 300 - 400 - (0))
+
+        if (left) {
+            Serial.print("=motors l: (");
+            Serial.print(left_mstate.plan.initial_speed);
+            Serial.print(") - 0 - ");
+            Serial.print(left_mstate.plan.acc_pos);
+            Serial.print(" - (");
+            Serial.print(left_mstate.target.speed);
+            Serial.print(") - ");
+            Serial.print(left_mstate.plan.dec_pos);
+            Serial.print(" - ");
+            Serial.print(left_mstate.target.pos);
+            Serial.println(" - (0)");
+        }
+
+        if (right) {
+            Serial.print("=motors r: (");
+            Serial.print(right_mstate.plan.initial_speed);
+            Serial.print(") - 0 - ");
+            Serial.print(right_mstate.plan.acc_pos);
+            Serial.print(" - (");
+            Serial.print(right_mstate.target.speed);
+            Serial.print(") - ");
+            Serial.print(right_mstate.plan.dec_pos);
+            Serial.print(" - ");
+            Serial.print(right_mstate.target.pos);
+            Serial.println(" - (0)");
+        }
+
+        return;
+    }
+
+    if (strcmp(subcmd, "kp") == 0) {
+        int32_t kp, ki, kd;
+        move_pid_get(&kp, &ki, &kd);
+        Serial.print("=kp ");
+        Serial.print(kp);
+        Serial.print(" ");
+        Serial.print(ki);
+        Serial.print(" ");
+        Serial.println(kd);
+        return;
+    }
+
+    if (strcmp(subcmd, "!kp") == 0) {
+        int32_t kp = cmd_ogeti(&_cli_cmd, 2, 0);
+        int32_t ki = cmd_ogeti(&_cli_cmd, 3, 0);
+        int32_t kd = cmd_ogeti(&_cli_cmd, 4, 0);
+        move_pid(kp, ki, kd);
+        Serial.println("=!kp");
+        return;
+    }
+
+    if (strcmp(subcmd, "minpwm") == 0) {
+        Serial.print("=minpwm ");
+        Serial.println(move_min_pwm_get());
+        return;
+    }
+
+    if (strcmp(subcmd, "!minpwm") == 0) {
+        uint8_t val = (uint8_t) cmd_ogeti(&_cli_cmd, 2, 0);
+        move_min_pwm(val);
+        Serial.println("=!minpwm");
+        return;
+    }
+
+    if (strcmp(subcmd, "sync") == 0) {
+        Serial.print("=sync ");
+        Serial.println(move_sync_get());
+        return;
+    }
+
+    if (strcmp(subcmd, "!sync") == 0) {
+        int32_t kp = cmd_ogeti(&_cli_cmd, 2, 0);
+        move_sync(kp);
+        Serial.println("=!sync");
+        return;
+    }
+
+    if (strcmp(subcmd, "headingtol") == 0) {
+        Serial.print("=headingtol ");
+        Serial.println(move_heading_tol_get());
+        return;
+    }
+
+    if (strcmp(subcmd, "!headingtol") == 0) {
+        float tol = cmd_ogetf(&_cli_cmd, 2, 0);
+        move_heading_tol(tol);
+        Serial.println("=!headingtol");
+        return;
+    }
+
+    if (strcmp(subcmd, "ready") == 0) {
+        Serial.print("=ready ");
+        Serial.println(move_ready() ? "true" : "false");
+        return;
+    }
+
+    if (strcmp(subcmd, "state") == 0) {
+        Serial.print("=state ");
+        Serial.println(move_state);
+        return;
+    }
+
+    if (strcmp(subcmd, "!state") == 0) {
+        int state = cmd_ogeti(&_cli_cmd, 2, 0);
+
+        if (state < MOVE_S_MIN || state > MOVE_S_MAX) {
+            Serial.println("~Invalid state argument");
+            return;
+        }
+
+        move_state = (move_state_t) state;
+        Serial.println("=!state");
+        return;
+    }
+
+    if (strcmp(subcmd, "pid") == 0) {
+        Serial.print("=pid ");
+        Serial.println(move_proc.pid);
+        return;
+    }
+
+    Serial.println("~Unknown move subcommand");
 }

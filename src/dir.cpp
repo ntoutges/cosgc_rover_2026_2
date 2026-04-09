@@ -10,6 +10,11 @@ uint8_t dir_trackers = 0; // Number of processes tracking the compass, up to 255
 
 dir_cal_t _dir_cal = { 0, 1, 0, 1 }; // Calibration data for the compass, which consists of minimum and maximum readings along each axis
 
+// Latest raw magnetometer readings
+int16_t _dir_mag_x = 0;
+int16_t _dir_mag_y = 0;
+int16_t _dir_mag_z = 0;
+
 bool _dir_magnetic = true; // Whether using magnetic readings from the QMC5883L compass (true) or rotational readings from the MPU6050 IMU (false)
 bool _dir_autocal_running = false; // Whether the automatic calibration process is currently running or not
 bool _dir_using_mpu = false; // Whether we are tracking the MPU module
@@ -28,7 +33,7 @@ void dir_csch_tick() {
             Wire.beginTransmission(DIR_I2C_ADDR);
             Wire.write(0x0A);   // CONTROL_1
             Wire.write(0x21);   // OSR=4, ODR=50Hz, MODE=normal
-            if (!Wire.endTransmission(false) == 0) {
+            if (Wire.endTransmission(true) != 0) {
                 csch_cqueue(DIR_I2C_TK_TIMEOUT);
                 return; // Failed to communicate with compass, try again later
             };
@@ -85,11 +90,11 @@ void dir_csch_tick() {
             Wire.requestFrom(DIR_I2C_ADDR, 6);
 
             // Read+translate compass readings
-            int16_t x = Wire.read() | (Wire.read() << 8);
-            int16_t y = Wire.read() | (Wire.read() << 8);
-            int16_t z = Wire.read() | (Wire.read() << 8);
+            _dir_mag_x = Wire.read() | (Wire.read() << 8);
+            _dir_mag_y = Wire.read() | (Wire.read() << 8);
+            _dir_mag_z = Wire.read() | (Wire.read() << 8);
 
-            _dir_heading = _dir_mag_heading(x, y, z);
+            _dir_heading = _dir_mag_heading(_dir_mag_x, _dir_mag_y, _dir_mag_z);
             break;
         }
 
@@ -102,6 +107,8 @@ void dir_csch_tick() {
             }
 
             // Reset min/max recorded values
+            _dir_cal.x_min = 32767;
+            _dir_cal.x_max = -32768;
             _dir_cal.y_min = 32767;
             _dir_cal.y_max = -32768;
             _dir_cal.z_min = 32767;
@@ -125,19 +132,18 @@ void dir_csch_tick() {
 
             Wire.requestFrom(DIR_I2C_ADDR, 6);
 
-            // Skip X axis reading
-            Wire.read();
-            Wire.read();
-
-            int16_t y = Wire.read() | (Wire.read() << 8);
-            int16_t z = Wire.read() | (Wire.read() << 8);
+            _dir_mag_x = Wire.read() | (Wire.read() << 8);
+            _dir_mag_y = Wire.read() | (Wire.read() << 8);
+            _dir_mag_z = Wire.read() | (Wire.read() << 8);
 
 
             // Update min/max recorded values
-            if (y < _dir_cal.y_min) _dir_cal.y_min = y;
-            if (y > _dir_cal.y_max) _dir_cal.y_max = y;
-            if (z < _dir_cal.z_min) _dir_cal.z_min = z;
-            if (z > _dir_cal.z_max) _dir_cal.z_max = z;
+            if (_dir_mag_x < _dir_cal.x_min) _dir_cal.x_min = _dir_mag_x;
+            if (_dir_mag_x > _dir_cal.x_max) _dir_cal.x_max = _dir_mag_x;
+            if (_dir_mag_y < _dir_cal.y_min) _dir_cal.y_min = _dir_mag_y;
+            if (_dir_mag_y > _dir_cal.y_max) _dir_cal.y_max = _dir_mag_y;
+            if (_dir_mag_z < _dir_cal.z_min) _dir_cal.z_min = _dir_mag_z;
+            if (_dir_mag_z > _dir_cal.z_max) _dir_cal.z_max = _dir_mag_z;
             break;
         }
     }
@@ -195,6 +201,12 @@ float dir_heading() {
     while (heading >= 360) heading -= 360;
 
     return heading;
+}
+
+void dir_raw(int16_t* x, int16_t* y, int16_t* z) {
+    *x = _dir_mag_x;
+    *y = _dir_mag_y;
+    *z = _dir_mag_z;
 }
 
 void dir_ref(float heading) {
@@ -257,7 +269,7 @@ void dir_track() {
 
     if (dir_trackers == 0) {
         if (dir_state == DIR_S_IDLE && _dir_magnetic) {
-            csch_cqueue(0); // Queue next reading immediately
+            csch_queue(dir_proc.csch, dir_proc.pid, 0); // Queue next reading immediately
             dir_state = DIR_S_TRACKING; // Start tracking the compass if this is the first tracker
         }
 
@@ -277,7 +289,7 @@ void dir_untrack() {
     dir_trackers--;
 
     if (dir_trackers == 0) {
-        if (dir_state == DIR_S_IDLE) {
+        if (dir_state == DIR_S_AUTOCAL_2) {
             dir_state = DIR_S_IDLE; // Stop tracking the MPU if there are no more trackers
         }
 
