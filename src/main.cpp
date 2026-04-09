@@ -4,7 +4,9 @@
 #include "mpu.h"
 #include "dir.h"
 #include "steps.h"
+#include "mot.h"
 #include "pos.h"
+#include "move.h"
 
 #include "cli.h"
 
@@ -23,7 +25,9 @@ void setup() {
     csch_task_fork(&sched, dir_csch_tick);
     csch_task_fork(&sched, cli_csch_tick);
     csch_task_fork(&sched, steps_csch_tick);
+    csch_task_fork(&sched, mot_csch_tick);
     csch_task_fork(&sched, pos_csch_tick);
+    csch_task_fork(&sched, move_csch_tick);
 
     mpu_cal((mpu_cal_t){ 6797, -4173, -32768, -1155, 77, -60 });
 

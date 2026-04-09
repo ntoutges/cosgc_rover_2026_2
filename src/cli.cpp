@@ -16,6 +16,7 @@ void cli_csch_tick() {
             cmd_attach(&_cli_cmd, "steps", _cli_steps_cmd, NULL);
             cmd_attach(&_cli_cmd, "mot", _cli_mot_cmd, NULL);
             cmd_attach(&_cli_cmd, "pos", _cli_pos_cmd, NULL);
+            cmd_attach(&_cli_cmd, "move", _cli_move_cmd, NULL);
 
             csch_cqueue(CLI_CSCH_TK_PASSIVE); // Queue next tick in passive mode
             _cli_state = CLI_S_PASSIVE;

@@ -41,6 +41,7 @@
                                 // If 0, the L2 pin will be considered the PWM pin
 #define MOT_PWM_R1 1            // Indicates that right motor control pin 1 is a PWM pin
                                 // If 0, the R2 pin will be considered the PWM pin
+#define MOT_FLUX_TK_DELAY 500   // Time to wait after movement before allowing the compass to be considered magnetically safe again, in ticks
 
 #define POS_CSCH_TK_PERIOD 1    // Period of position state machine, in ticks
 #define POS_WAIT_TK_PERIOD 100  // Period to wait for dir/steps modules to be ready before trying to track position, in ticks

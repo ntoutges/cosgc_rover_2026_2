@@ -25,6 +25,7 @@
 #include "steps.h"
 #include "mot.h"
 #include "pos.h"
+#include "move.h"
 
 // -------- SCHEDULING --------
 
@@ -164,5 +165,28 @@ void _cli_mot_cmd(void*);
  * - `pid`: Print the current PID values for the position (usage: `!pos pid`)
  */
 void _cli_pos_cmd(void*);
+
+/**
+ * @brief Command callback for the `move` command
+ * 
+ * Available Subcommands:
+ * - `busy`: Print whether the movement module is currently executing a movement command (usage: `!move busy`)
+ * - `drive`: Drive forward or backward at a given speed (usage: `!move drive <speed>`) where speed a positive value corresponds to forward movement and a negative value corresponds to backward movement, and the speed is in steps (mm) per second
+ * - `rotate`: Rotate in place at a given speed (usage: `!move rotate <speed>`) where a positive value corresponds to clockwise rotation and a negative value corresponds to counterclockwise rotation, and the speed is in steps (mm) per second
+ * - `rotateto`: Rotate in place to a specific heading at a given speed (usage: `!move rotateto <angle> <speed>`) where the angle is in degrees in the range [0, 360) and the speed is a positive value in steps (mm) per second
+ * - `driveby`: Drive forward or backward a specific distance at a given speed (usage: `!move driveby <distance> <speed>`) where a positive value for distance corresponds to forward movement and a negative value for distance corresponds to backward movement, the distance is in encoder steps, and the speed is in steps (mm) per second
+ * - `stop`: Stop all movement, either immediately (-f) or by decelerating (usage: `!move stop [-f]`) (Defaults to decelerating if no flag specified)
+ * - `ramp`: Get the acceleration/deceleration profile for movement (usage: `!move ramp`)
+ * - `!ramp`: Set the acceleration/deceleration profile for movement (usage: `!move !ramp <accel>`) where accel is in steps (mm) per second squared, and a value of 0 corresponds to no ramping (i.e. instant acceleration and deceleration)
+ * 
+ * - `plan`: Move into/out of the planning state, which allows for updating the movement plan without executing it, and then execute the updated plan once ready (usage: `!move plan <true/false>`)
+ * - `motors`: Print the current states of the specified motors (usage: `!move motors [-lr]`) (Defaults to both motors if no motors specified)
+ * 
+ * - `ready`: Print whether the movement module is ready to be controlled (usage: `!move ready`)
+ * - `state`: Print the current state of the movement state machine (usage: `!move state`)
+ * - `!state`: Print the current state of the movement state machine (usage: `!move !state <state>`)
+ * - `pid`: Print the current PID values for the movement module (usage: `!move pid`)
+ */
+void _cli_move_cmd(void*);
 
 #endif
