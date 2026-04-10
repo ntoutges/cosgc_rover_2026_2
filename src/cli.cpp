@@ -811,182 +811,38 @@ void _cli_move_cmd(void*) {
     }
 
     if (strcmp(subcmd, "drive") == 0) {
-        float speed = cmd_ogetf(&_cli_cmd, 2, 0);
-        move_drive(speed);
+        int16_t power = (int16_t) cmd_ogeti(&_cli_cmd, 2, 0);
+        move_drive(power);
         Serial.println("=!drive");
         return;
     }
 
     if (strcmp(subcmd, "driveby") == 0) {
-        int distance = cmd_ogeti(&_cli_cmd, 2, 0);
-        float speed = cmd_ogetf(&_cli_cmd, 3, 0);
-        move_drive_by(distance, speed);
+        int16_t power = (int16_t) cmd_ogeti(&_cli_cmd, 2, 0);
+        int32_t distance = cmd_ogeti(&_cli_cmd, 3, 0);
+        move_drive_by(power, distance);
         Serial.println("=!driveby");
         return;
     }
 
     if (strcmp(subcmd, "rotate") == 0) {
-        float speed = cmd_ogetf(&_cli_cmd, 2, 0);
-        move_rotate(speed);
+        int16_t power = (int16_t) cmd_ogeti(&_cli_cmd, 2, 0);
+        move_rotate(power);
         Serial.println("=!rotate");
         return;
     }
 
     if (strcmp(subcmd, "rotateto") == 0) {
-        float heading = cmd_ogetf(&_cli_cmd, 2, 0);
-        float speed = cmd_ogetf(&_cli_cmd, 3, 0);
-        move_rotate_to(heading, speed);
+        uint8_t power = (uint8_t) cmd_ogeti(&_cli_cmd, 2, 0);
+        float heading = cmd_ogetf(&_cli_cmd, 3, 0);
+        move_rotate_to(power, heading);
         Serial.println("=!rotateto");
         return;
     }
 
     if (strcmp(subcmd, "stop") == 0) {
-        bool force = cmd_ugetb(&_cli_cmd, "f", false);
-        move_stop(force);
+        move_stop();
         Serial.println("=!stop");
-        return;
-    }
-
-    if (strcmp(subcmd, "ramp") == 0) {
-        float ramp = move_ramp_get();
-
-        Serial.print("=ramp ");
-        Serial.println(ramp);
-        return;
-    }
-
-    if (strcmp(subcmd, "!ramp") == 0) {
-        float accel = cmd_ogetf(&_cli_cmd, 2, 0);
-
-        move_ramp(accel);
-        Serial.println("=!ramp");
-        return;
-    }
-
-    if (strcmp(subcmd, "plan") == 0) {
-        const char* plan_str = cmd_ogets(&_cli_cmd, 2, "");
-
-        bool plan;
-        if (strcmp(plan_str, "true") == 0) {
-            plan = true;
-        }
-        else if (strcmp(plan_str, "false") == 0) {
-            plan = false;
-        }
-        else {
-            Serial.println("~Invalid plan argument (true/false)");
-            return;
-        }
-
-        move_plan(plan);
-        Serial.println("=!plan");
-        return;
-    }
-
-    if (strcmp(subcmd, "motors") == 0) {
-        bool left = cmd_ugetb(&_cli_cmd, "l", false);
-        bool right = cmd_ugetb(&_cli_cmd, "r", false);
-
-        if (!left && !right) {
-            left = true;
-            right = true;
-        }
-
-        move_mstate_t left_mstate;
-        move_mstate_t right_mstate;
-        move_motors_get(&left_mstate, &right_mstate);
-
-        // Print format: "<side>: (<initial>) - 0 - <acc_pos> - (max_speed) - <dec_pos> - <final_pos> - (0)"
-        // Print example (l: (0) - 0 - 100 - (100) - 300 - 400 - (0))
-
-        if (left) {
-            Serial.print("=motors l: (");
-            Serial.print(left_mstate.plan.initial_speed);
-            Serial.print(") - 0 - ");
-            Serial.print(left_mstate.plan.acc_pos);
-            Serial.print(" - (");
-            Serial.print(left_mstate.target.speed);
-            Serial.print(") - ");
-            Serial.print(left_mstate.plan.dec_pos);
-            Serial.print(" - ");
-            Serial.print(left_mstate.target.pos);
-            Serial.println(" - (0)");
-        }
-
-        if (right) {
-            Serial.print("=motors r: (");
-            Serial.print(right_mstate.plan.initial_speed);
-            Serial.print(") - 0 - ");
-            Serial.print(right_mstate.plan.acc_pos);
-            Serial.print(" - (");
-            Serial.print(right_mstate.target.speed);
-            Serial.print(") - ");
-            Serial.print(right_mstate.plan.dec_pos);
-            Serial.print(" - ");
-            Serial.print(right_mstate.target.pos);
-            Serial.println(" - (0)");
-        }
-
-        return;
-    }
-
-    if (strcmp(subcmd, "kp") == 0) {
-        int32_t kp, ki, kd;
-        move_pid_get(&kp, &ki, &kd);
-        Serial.print("=kp ");
-        Serial.print(kp);
-        Serial.print(" ");
-        Serial.print(ki);
-        Serial.print(" ");
-        Serial.println(kd);
-        return;
-    }
-
-    if (strcmp(subcmd, "!kp") == 0) {
-        int32_t kp = cmd_ogeti(&_cli_cmd, 2, 0);
-        int32_t ki = cmd_ogeti(&_cli_cmd, 3, 0);
-        int32_t kd = cmd_ogeti(&_cli_cmd, 4, 0);
-        move_pid(kp, ki, kd);
-        Serial.println("=!kp");
-        return;
-    }
-
-    if (strcmp(subcmd, "minpwm") == 0) {
-        Serial.print("=minpwm ");
-        Serial.println(move_min_pwm_get());
-        return;
-    }
-
-    if (strcmp(subcmd, "!minpwm") == 0) {
-        uint8_t val = (uint8_t) cmd_ogeti(&_cli_cmd, 2, 0);
-        move_min_pwm(val);
-        Serial.println("=!minpwm");
-        return;
-    }
-
-    if (strcmp(subcmd, "sync") == 0) {
-        Serial.print("=sync ");
-        Serial.println(move_sync_get());
-        return;
-    }
-
-    if (strcmp(subcmd, "!sync") == 0) {
-        int32_t kp = cmd_ogeti(&_cli_cmd, 2, 0);
-        move_sync(kp);
-        Serial.println("=!sync");
-        return;
-    }
-
-    if (strcmp(subcmd, "headingtol") == 0) {
-        Serial.print("=headingtol ");
-        Serial.println(move_heading_tol_get());
-        return;
-    }
-
-    if (strcmp(subcmd, "!headingtol") == 0) {
-        float tol = cmd_ogetf(&_cli_cmd, 2, 0);
-        move_heading_tol(tol);
-        Serial.println("=!headingtol");
         return;
     }
 

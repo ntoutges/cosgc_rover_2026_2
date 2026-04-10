@@ -47,8 +47,4 @@
 #define POS_WAIT_TK_PERIOD 100  // Period to wait for dir/steps modules to be ready before trying to track position, in ticks
 
 #define MOVE_CSCH_TK_PERIOD 1       // Period of movement state machine, in ticks
-#define MOVE_DER_BUCKETS 5          // Number of buckets to use for derivative smoothing for movement control; Smooths out derivative over the last n ms
-#define MOVE_DER_MS_PERIOD 5        // Period between ticks for updating the derivative buckets for movement control, in ms
-#define MOVE_MIN_PWM 40             // Default minimum PWM to overcome motor dead zone; 0 to disable
-#define MOVE_SYNC_KP 0              // Default proportional gain for left/right motor synchronization; 0 to disable
-#define MOVE_HEADING_TOL 5.0        // Default heading tolerance in degrees for rotate_to completion
+#define MOVE_RAMP_STEP 1            // PWM units to add per tick during ramp-up (0 = instant; 5 = 0→255 in ~50ms)

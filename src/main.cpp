@@ -36,10 +36,6 @@ void setup() {
 
     steps_cal((steps_cal_t){ 0, 884, 0, 884 });
 
-    move_ramp(100); // Set movement acceleration to 100 steps (mm) per second squared
-
-    int32_t next = 0;
-
     // Run the scheduler
     while (1) {
         csch_tick(&sched);
