@@ -21,6 +21,9 @@
 #define CLI_ENTRY_BUF_SIZE 8    // Number of commands that can be registered in the CLI
 #define CLI_BUF_BUF_SIZE 64     // Size of the buffer for incoming CLI commands
 #define CLI_MAX_TICK_PARSE 8    // Maximum number of characters to parse each tick
+#define CLI_SERIAL1_BAUD 9600   // Baud rate on Serial1 for CLI output
+#define CLI_SERIAL1_ENABLE 1    // Whether to enable Serial1 for CLI output (0 = disable, 1 = enable)
+                                // If 0: Uses Serial
 
 #define STEPS_CSCH_TK_PERIOD 1   // Period of movement state machine, in ticks
 #define STEPS_LEFT_PIN A2        // Pin to measure steps for the left motor

@@ -14,7 +14,6 @@ csch_t sched;
 csch_proc_t proc_buf[8];
 
 void setup() {
-    Serial.begin(115200);
     Wire.begin();
     Wire.setTimeout(250); // Set I2C timeout to 250ms
     Wire.setWireTimeout(3000, true);

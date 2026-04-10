@@ -6,6 +6,14 @@ cmd_t _cli_cmd;
 cmd_entry_t _cli_entry_buf[CLI_ENTRY_BUF_SIZE];
 uint8_t _cli_buf_buf[CLI_BUF_BUF_SIZE];
 
+#if CLI_SERIAL1_ENABLE
+#define CLI_SERIAL Serial1
+#define CLI_BAUD CLI_SERIAL1_BAUD
+#else
+#define CLI_SERIAL Serial
+#define CLI_BAUD 115200
+#endif
+
 void cli_csch_tick() {
     switch (_cli_state) {
         case CLI_S_INIT:
@@ -18,12 +26,15 @@ void cli_csch_tick() {
             cmd_attach(&_cli_cmd, "pos", _cli_pos_cmd, NULL);
             cmd_attach(&_cli_cmd, "move", _cli_move_cmd, NULL);
 
+            // Startup serial for CLI input/output
+            CLI_SERIAL.begin(CLI_BAUD);
+
             csch_cqueue(CLI_CSCH_TK_PASSIVE); // Queue next tick in passive mode
             _cli_state = CLI_S_PASSIVE;
             break;
 
         case CLI_S_PASSIVE:
-            if (Serial.available()) {
+            if (CLI_SERIAL.available()) {
                 _cli_state = CLI_S_ACTIVE; // Input available, read and process it
                 csch_cqueue(CLI_CSCH_TK_ACTIVE); // Queue next tick in active mode
             }
@@ -34,7 +45,7 @@ void cli_csch_tick() {
             break;
 
         case CLI_S_ACTIVE:
-            int parse_ct = Serial.available();
+            int parse_ct = CLI_SERIAL.available();
 
             if (!parse_ct) {
                 _cli_state = CLI_S_PASSIVE; // No more input, go back to passive mode
@@ -51,7 +62,7 @@ void cli_csch_tick() {
 
             // Run command receive state machine on incoming characters
             for (int i = 0; i < parse_ct; i++) {
-                char recv = Serial.read();
+                char recv = CLI_SERIAL.read();
                 
                 if (cmd_recv(&_cli_cmd, recv)) continue; // Consume all characters that are part of valid commands
                 if (mot_user_recv(recv)) continue;       // Consume all characters that are used for user motor control
@@ -68,12 +79,12 @@ void _cli_mpu_cmd(void*) {
         int delay = cmd_ogeti(&_cli_cmd, 3, 0);
 
         if (samples <= 0 || samples > 255 || delay <= 0 || delay > 65535) {
-            Serial.println("~acal requires arguments samples, delay");
+            CLI_SERIAL.println("~acal requires arguments samples, delay");
             return;
         }
 
         mpu_autocal((uint8_t) samples, (uint16_t) delay);
-        Serial.println("=acal");
+        CLI_SERIAL.println("=acal");
         return;
     }
 
@@ -81,18 +92,18 @@ void _cli_mpu_cmd(void*) {
         mpu_cal_t cal = mpu_cal_get();
 
         // Return result as space-separated values in the order ax ay az gx gy gz
-        Serial.print("=cal ");
-        Serial.print(cal.ax);
-        Serial.print(" ");
-        Serial.print(cal.ay);
-        Serial.print(" ");
-        Serial.print(cal.az);
-        Serial.print(" ");
-        Serial.print(cal.gx);
-        Serial.print(" ");
-        Serial.print(cal.gy);
-        Serial.print(" ");
-        Serial.println(cal.gz);
+        CLI_SERIAL.print("=cal ");
+        CLI_SERIAL.print(cal.ax);
+        CLI_SERIAL.print(" ");
+        CLI_SERIAL.print(cal.ay);
+        CLI_SERIAL.print(" ");
+        CLI_SERIAL.print(cal.az);
+        CLI_SERIAL.print(" ");
+        CLI_SERIAL.print(cal.gx);
+        CLI_SERIAL.print(" ");
+        CLI_SERIAL.print(cal.gy);
+        CLI_SERIAL.print(" ");
+        CLI_SERIAL.println(cal.gz);
         return;
     }
 
@@ -112,7 +123,7 @@ void _cli_mpu_cmd(void*) {
             .gy = gy,
             .gz = gz
         });
-        Serial.println("=!cal");
+        CLI_SERIAL.println("=!cal");
         return;
     }
 
@@ -120,12 +131,12 @@ void _cli_mpu_cmd(void*) {
         int16_t ax, ay, az;
         mpu_acc(&ax, &ay, &az);
 
-        Serial.print("=acc ");
-        Serial.print(ax);
-        Serial.print(" ");
-        Serial.print(ay);
-        Serial.print(" ");
-        Serial.println(az);
+        CLI_SERIAL.print("=acc ");
+        CLI_SERIAL.print(ax);
+        CLI_SERIAL.print(" ");
+        CLI_SERIAL.print(ay);
+        CLI_SERIAL.print(" ");
+        CLI_SERIAL.println(az);
         return;
     }
 
@@ -133,12 +144,12 @@ void _cli_mpu_cmd(void*) {
         uint16_t ax_max, ay_max, az_max;
         mpu_acc_max(&ax_max, &ay_max, &az_max);
 
-        Serial.print("=accmax ");
-        Serial.print(ax_max);
-        Serial.print(" ");
-        Serial.print(ay_max);
-        Serial.print(" ");
-        Serial.println(az_max);
+        CLI_SERIAL.print("=accmax ");
+        CLI_SERIAL.print(ax_max);
+        CLI_SERIAL.print(" ");
+        CLI_SERIAL.print(ay_max);
+        CLI_SERIAL.print(" ");
+        CLI_SERIAL.println(az_max);
         return;
     }
 
@@ -155,11 +166,11 @@ void _cli_mpu_cmd(void*) {
         }
 
         mpu_acc_reset(x, y, z);
-        Serial.print("=accreset ");
-        if (x) Serial.print("x");
-        if (y) Serial.print("y");
-        if (z) Serial.print("z");
-        Serial.println();
+        CLI_SERIAL.print("=accreset ");
+        if (x) CLI_SERIAL.print("x");
+        if (y) CLI_SERIAL.print("y");
+        if (z) CLI_SERIAL.print("z");
+        CLI_SERIAL.println();
         return;
     }
 
@@ -167,12 +178,12 @@ void _cli_mpu_cmd(void*) {
         float rx, ry, rz;
         mpu_rot_ac(&rx, &ry, &rz);
 
-        Serial.print("=rot ");
-        Serial.print(rx);
-        Serial.print(" ");
-        Serial.print(ry);
-        Serial.print(" ");
-        Serial.println(rz);
+        CLI_SERIAL.print("=rot ");
+        CLI_SERIAL.print(rx);
+        CLI_SERIAL.print(" ");
+        CLI_SERIAL.print(ry);
+        CLI_SERIAL.print(" ");
+        CLI_SERIAL.println(rz);
         return;
     }
 
@@ -189,23 +200,23 @@ void _cli_mpu_cmd(void*) {
         }
 
         mpu_rot_reset(x, y, z);
-        Serial.print("=rotreset ");
-        if (x) Serial.print("x");
-        if (y) Serial.print("y");
-        if (z) Serial.print("z");
-        Serial.println();
+        CLI_SERIAL.print("=rotreset ");
+        if (x) CLI_SERIAL.print("x");
+        if (y) CLI_SERIAL.print("y");
+        if (z) CLI_SERIAL.print("z");
+        CLI_SERIAL.println();
         return;
     }
 
     if (strcmp(subcmd, "ready") == 0) {
-        Serial.print("=ready ");
-        Serial.println(mpu_ready() ? "true" : "false");
+        CLI_SERIAL.print("=ready ");
+        CLI_SERIAL.println(mpu_ready() ? "true" : "false");
         return;
     }
 
     if (strcmp(subcmd, "state") == 0) {
-        Serial.print("=state ");
-        Serial.println(mpu_state);
+        CLI_SERIAL.print("=state ");
+        CLI_SERIAL.println(mpu_state);
         return;
     }
 
@@ -213,41 +224,41 @@ void _cli_mpu_cmd(void*) {
         int state = cmd_ogeti(&_cli_cmd, 2, 0);
 
         if (state < MPU_S_MIN || state > MPU_S_MAX) {
-            Serial.println("~Invalid state argument");
+            CLI_SERIAL.println("~Invalid state argument");
             return;
         }
 
         mpu_state = (mpu_state_t) state;
-        Serial.println("=!state");
+        CLI_SERIAL.println("=!state");
         return;
     }
 
     if (strcmp(subcmd, "track") == 0) {
-        Serial.print("=!track ");
-        Serial.println(mpu_trackers);
+        CLI_SERIAL.print("=!track ");
+        CLI_SERIAL.println(mpu_trackers);
         return;
     }
 
     if (strcmp(subcmd, "!track") == 0) {
         mpu_track();
-        Serial.println("=!track");
+        CLI_SERIAL.println("=!track");
         return;
     }
 
     if (strcmp(subcmd, "!untrack") == 0) {
         mpu_untrack();
 
-        Serial.println("=!untrack");
+        CLI_SERIAL.println("=!untrack");
         return;
     }
 
     if (strcmp(subcmd, "pid") == 0) {
-        Serial.print("=pid ");
-        Serial.println(mpu_proc.pid);
+        CLI_SERIAL.print("=pid ");
+        CLI_SERIAL.println(mpu_proc.pid);
         return;
     }
 
-    Serial.println("~Unknown mpu subcommand");
+    CLI_SERIAL.println("~Unknown mpu subcommand");
 }
 
 void _cli_dir_cmd(void*) {
@@ -258,17 +269,17 @@ void _cli_dir_cmd(void*) {
 
         if (strcmp(state, "begin") == 0) {
             dir_autocal_begin();
-            Serial.println("=acal begin");
+            CLI_SERIAL.println("=acal begin");
             return;
         }
         else if (strcmp(state, "end") == 0) {
             bool success = dir_autocal_end();
-            Serial.print("=acal end");
-            Serial.println(success ? "" : " fail");
+            CLI_SERIAL.print("=acal end");
+            CLI_SERIAL.println(success ? "" : " fail");
             return;
         }
         else {
-            Serial.println("~Invalid acal argument (begin/end)");
+            CLI_SERIAL.println("~Invalid acal argument (begin/end)");
             return;
         }
     }
@@ -277,18 +288,18 @@ void _cli_dir_cmd(void*) {
         dir_cal_t cal = dir_cal_get();
 
         // Return result as space-separated values in the order x_min x_max y_min y_max z_min z_max
-        Serial.print("=cal ");
-        Serial.print(cal.x_min);
-        Serial.print(" ");
-        Serial.print(cal.x_max);
-        Serial.print(" ");
-        Serial.print(cal.y_min);
-        Serial.print(" ");
-        Serial.print(cal.y_max);
-        Serial.print(" ");
-        Serial.print(cal.z_min);
-        Serial.print(" ");
-        Serial.println(cal.z_max);
+        CLI_SERIAL.print("=cal ");
+        CLI_SERIAL.print(cal.x_min);
+        CLI_SERIAL.print(" ");
+        CLI_SERIAL.print(cal.x_max);
+        CLI_SERIAL.print(" ");
+        CLI_SERIAL.print(cal.y_min);
+        CLI_SERIAL.print(" ");
+        CLI_SERIAL.print(cal.y_max);
+        CLI_SERIAL.print(" ");
+        CLI_SERIAL.print(cal.z_min);
+        CLI_SERIAL.print(" ");
+        CLI_SERIAL.println(cal.z_max);
         return;
     }
 
@@ -308,13 +319,13 @@ void _cli_dir_cmd(void*) {
             .z_min = z_min,
             .z_max = z_max
         });
-        Serial.println("=!cal");
+        CLI_SERIAL.println("=!cal");
         return;
     }
 
     if (strcmp(subcmd, "heading") == 0) {
-        Serial.print("=heading ");
-        Serial.println(dir_heading());
+        CLI_SERIAL.print("=heading ");
+        CLI_SERIAL.println(dir_heading());
         return;
     }
 
@@ -322,20 +333,20 @@ void _cli_dir_cmd(void*) {
         int16_t x, y, z;
         dir_raw(&x, &y, &z);
 
-        Serial.print("=raw ");
-        Serial.print(x);
-        Serial.print(" ");
-        Serial.print(y);
-        Serial.print(" ");
-        Serial.println(z);
+        CLI_SERIAL.print("=raw ");
+        CLI_SERIAL.print(x);
+        CLI_SERIAL.print(" ");
+        CLI_SERIAL.print(y);
+        CLI_SERIAL.print(" ");
+        CLI_SERIAL.println(z);
         return;
     }
 
     if (strcmp(subcmd, "ref") == 0) {
         float ref = dir_ref_get();
 
-        Serial.print("=ref ");
-        Serial.println(ref);
+        CLI_SERIAL.print("=ref ");
+        CLI_SERIAL.println(ref);
         return;
     }
 
@@ -343,24 +354,24 @@ void _cli_dir_cmd(void*) {
         float ref = cmd_ogetf(&_cli_cmd, 2, 0);
 
         dir_ref(ref);
-        Serial.println("=!ref");
+        CLI_SERIAL.println("=!ref");
         return;
     }
 
     if (strcmp(subcmd, "orient") == 0) {
         dir_orient_t orient = dir_orient_get();
 
-        Serial.print("=orient ");
+        CLI_SERIAL.print("=orient ");
         switch (orient) {
             case DIR_O_YZ:
-                Serial.println("yz");
+                CLI_SERIAL.println("yz");
                 break;
             case DIR_O_XZ:
-                Serial.println("xz");
+                CLI_SERIAL.println("xz");
                 break;
             case DIR_O_XY:
             default:
-                Serial.println("xy");
+                CLI_SERIAL.println("xy");
                 break;
         }
     }
@@ -380,20 +391,20 @@ void _cli_dir_cmd(void*) {
             orient = DIR_O_XY;
         }
         else {
-            Serial.println("~Invalid orient argument (yz/xz/xy)");
+            CLI_SERIAL.println("~Invalid orient argument (yz/xz/xy)");
             return;
         }
 
         dir_orient(orient);
-        Serial.println("=!orient");
+        CLI_SERIAL.println("=!orient");
         return;
     }
 
     if (strcmp(subcmd, "magnet") == 0) {
         bool safe = dir_magnet_safe_get();
 
-        Serial.print("=magnet ");
-        Serial.println(safe ? "true" : "false");
+        CLI_SERIAL.print("=magnet ");
+        CLI_SERIAL.println(safe ? "true" : "false");
         return;
     }
 
@@ -408,24 +419,24 @@ void _cli_dir_cmd(void*) {
             safe = false;
         }
         else {
-            Serial.println("~Invalid magnet argument (true/false)");
+            CLI_SERIAL.println("~Invalid magnet argument (true/false)");
             return;
         }
 
         dir_magnet_safe(safe);
-        Serial.println("=!magnet");
+        CLI_SERIAL.println("=!magnet");
         return;
     }
 
     if (strcmp(subcmd, "ready") == 0) {
-        Serial.print("=ready ");
-        Serial.println(dir_ready() ? "true" : "false");
+        CLI_SERIAL.print("=ready ");
+        CLI_SERIAL.println(dir_ready() ? "true" : "false");
         return;
     }
 
     if (strcmp(subcmd, "state") == 0) {
-        Serial.print("=state ");
-        Serial.println(dir_state);
+        CLI_SERIAL.print("=state ");
+        CLI_SERIAL.println(dir_state);
         return;
     }
 
@@ -433,40 +444,40 @@ void _cli_dir_cmd(void*) {
         int state = cmd_ogeti(&_cli_cmd, 2, 0);
 
         if (state < DIR_S_MIN || state > DIR_S_MAX) {
-            Serial.println("~Invalid state argument");
+            CLI_SERIAL.println("~Invalid state argument");
             return;
         }
 
         dir_state = (dir_state_t) state;
-        Serial.println("=!state");
+        CLI_SERIAL.println("=!state");
         return;
     }
 
     if (strcmp(subcmd, "track") == 0) {
-        Serial.print("=track ");
-        Serial.println(dir_trackers);
+        CLI_SERIAL.print("=track ");
+        CLI_SERIAL.println(dir_trackers);
         return;
     }
 
     if (strcmp(subcmd, "!track") == 0) {
         dir_track();
-        Serial.println("=!track");
+        CLI_SERIAL.println("=!track");
         return;
     }
 
     if (strcmp(subcmd, "!untrack") == 0) {
         dir_untrack();
-        Serial.println("=!untrack");
+        CLI_SERIAL.println("=!untrack");
         return;
     }
 
     if (strcmp(subcmd, "pid") == 0) {
-        Serial.print("=pid ");
-        Serial.println(dir_proc.pid);
+        CLI_SERIAL.print("=pid ");
+        CLI_SERIAL.println(dir_proc.pid);
         return;
     }
 
-    Serial.println("~Unknown dir subcommand");
+    CLI_SERIAL.println("~Unknown dir subcommand");
 }
 
 void _cli_steps_cmd(void*) {
@@ -477,17 +488,17 @@ void _cli_steps_cmd(void*) {
 
         if (strcmp(state, "begin") == 0) {
             steps_autocal_begin();
-            Serial.println("=acal begin");
+            CLI_SERIAL.println("=acal begin");
             return;
         }
         else if (strcmp(state, "end") == 0) {
             bool success = steps_autocal_end();
-            Serial.print("=acal end");
-            Serial.println(success ? "" : " fail");
+            CLI_SERIAL.print("=acal end");
+            CLI_SERIAL.println(success ? "" : " fail");
             return;
         }
         else {
-            Serial.println("~Invalid acal argument (begin/end)");
+            CLI_SERIAL.println("~Invalid acal argument (begin/end)");
             return;
         }
     }
@@ -496,14 +507,14 @@ void _cli_steps_cmd(void*) {
         steps_cal_t cal = steps_cal_get();
 
         // Return result as space-separated values in the order left_min, left_max, right_min, right_max
-        Serial.print("=cal ");
-        Serial.print(cal.left_min);
-        Serial.print(" ");
-        Serial.print(cal.left_max);
-        Serial.print(" ");
-        Serial.print(cal.right_min);
-        Serial.print(" ");
-        Serial.println(cal.right_max);
+        CLI_SERIAL.print("=cal ");
+        CLI_SERIAL.print(cal.left_min);
+        CLI_SERIAL.print(" ");
+        CLI_SERIAL.print(cal.left_max);
+        CLI_SERIAL.print(" ");
+        CLI_SERIAL.print(cal.right_min);
+        CLI_SERIAL.print(" ");
+        CLI_SERIAL.println(cal.right_max);
         return;
     }
 
@@ -519,7 +530,7 @@ void _cli_steps_cmd(void*) {
             .right_min = right_min,
             .right_max = right_max
         });
-        Serial.println("=!cal");
+        CLI_SERIAL.println("=!cal");
         return;
     }
 
@@ -527,10 +538,10 @@ void _cli_steps_cmd(void*) {
         int32_t left, right;
         steps_read(&left, &right);
 
-        Serial.print("=read ");
-        Serial.print(left);
-        Serial.print(" ");
-        Serial.println(right);
+        CLI_SERIAL.print("=read ");
+        CLI_SERIAL.print(left);
+        CLI_SERIAL.print(" ");
+        CLI_SERIAL.println(right);
         return;
     }
 
@@ -538,10 +549,10 @@ void _cli_steps_cmd(void*) {
         int16_t left, right;
         steps_raw(&left, &right);
 
-        Serial.print("=raw ");
-        Serial.print(left);
-        Serial.print(" ");
-        Serial.println(right);
+        CLI_SERIAL.print("=raw ");
+        CLI_SERIAL.print(left);
+        CLI_SERIAL.print(" ");
+        CLI_SERIAL.println(right);
         return;
     }
 
@@ -556,18 +567,18 @@ void _cli_steps_cmd(void*) {
         }
 
         steps_reset(left, right);
-        Serial.print("=reset ");
-        if (left) Serial.print("l");
-        if (right) Serial.print("r");
-        Serial.println();
+        CLI_SERIAL.print("=reset ");
+        if (left) CLI_SERIAL.print("l");
+        if (right) CLI_SERIAL.print("r");
+        CLI_SERIAL.println();
         return;
     }
 
     if (strcmp(subcmd, "coef") == 0) {
         float coef = steps_coef_get();
 
-        Serial.print("=coef ");
-        Serial.println(coef);
+        CLI_SERIAL.print("=coef ");
+        CLI_SERIAL.println(coef);
         return;
     }
 
@@ -575,19 +586,19 @@ void _cli_steps_cmd(void*) {
         float coef = cmd_ogetf(&_cli_cmd, 2, 0);
 
         steps_coef(coef);
-        Serial.println("=!coef");
+        CLI_SERIAL.println("=!coef");
         return;
     }
 
     if (strcmp(subcmd, "ready") == 0) {
-        Serial.print("=ready ");
-        Serial.println(steps_ready() ? "true" : "false");
+        CLI_SERIAL.print("=ready ");
+        CLI_SERIAL.println(steps_ready() ? "true" : "false");
         return;
     }
 
     if (strcmp(subcmd, "state") == 0) {
-        Serial.print("=state ");
-        Serial.println(steps_state);
+        CLI_SERIAL.print("=state ");
+        CLI_SERIAL.println(steps_state);
         return;
     }
 
@@ -595,40 +606,40 @@ void _cli_steps_cmd(void*) {
         int state = cmd_ogeti(&_cli_cmd, 2, 0);
 
         if (state < STEPS_S_MIN || state > STEPS_S_MAX) {
-            Serial.println("~Invalid state argument");
+            CLI_SERIAL.println("~Invalid state argument");
             return;
         }
 
         steps_state = (steps_state_t) state;
-        Serial.println("=!state");
+        CLI_SERIAL.println("=!state");
         return;
     }
 
     if (strcmp(subcmd, "track") == 0) {
-        Serial.print("=track ");
-        Serial.println(steps_trackers);
+        CLI_SERIAL.print("=track ");
+        CLI_SERIAL.println(steps_trackers);
         return;
     }
 
     if (strcmp(subcmd, "!track") == 0) {
         steps_track();
-        Serial.println("=!track");
+        CLI_SERIAL.println("=!track");
         return;
     }
 
     if (strcmp(subcmd, "!untrack") == 0) {
         steps_untrack();
-        Serial.println("=!untrack");
+        CLI_SERIAL.println("=!untrack");
         return;
     }
 
     if (strcmp(subcmd, "pid") == 0) {
-        Serial.print("=pid ");
-        Serial.println(steps_proc.pid);
+        CLI_SERIAL.print("=pid ");
+        CLI_SERIAL.println(steps_proc.pid);
         return;
     }
 
-    Serial.println("~Unknown steps subcommand");
+    CLI_SERIAL.println("~Unknown steps subcommand");
 }
 
 void _cli_mot_cmd(void*) {
@@ -638,10 +649,10 @@ void _cli_mot_cmd(void*) {
         int16_t left, right;
         mot_power_get(&left, &right);
 
-        Serial.print("=get ");
-        Serial.print(left);
-        Serial.print(" ");
-        Serial.println(right);
+        CLI_SERIAL.print("=get ");
+        CLI_SERIAL.print(left);
+        CLI_SERIAL.print(" ");
+        CLI_SERIAL.println(right);
         return;
     }
 
@@ -650,19 +661,19 @@ void _cli_mot_cmd(void*) {
         int16_t right = (int16_t) cmd_ogeti(&_cli_cmd, 3, 0);
 
         mot_power_set(left, right);
-        Serial.println("=!set");
+        CLI_SERIAL.println("=!set");
         return;
     }
 
     if (strcmp(subcmd, "stop") == 0) {
         mot_power_set(0, 0);
-        Serial.println("=!stop");
+        CLI_SERIAL.println("=!stop");
         return;
     }
 
     if (strcmp(subcmd, "override") == 0) {
-        Serial.print("=override ");
-        Serial.println(mot_user_get() ? "true" : "false");
+        CLI_SERIAL.print("=override ");
+        CLI_SERIAL.println(mot_user_get() ? "true" : "false");
         return;
     }
 
@@ -677,24 +688,24 @@ void _cli_mot_cmd(void*) {
             override = false;
         }
         else {
-            Serial.println("~Invalid override argument (true/false)");
+            CLI_SERIAL.println("~Invalid override argument (true/false)");
             return;
         }
 
         mot_user(override);
-        Serial.println("=!override");
+        CLI_SERIAL.println("=!override");
         return;
     }
 
     if (strcmp(subcmd, "ready") == 0) {
-        Serial.print("=ready ");
-        Serial.println(mot_ready() ? "true" : "false");
+        CLI_SERIAL.print("=ready ");
+        CLI_SERIAL.println(mot_ready() ? "true" : "false");
         return;
     }
 
     if (strcmp(subcmd, "state") == 0) {
-        Serial.print("=state ");
-        Serial.println(mot_state);
+        CLI_SERIAL.print("=state ");
+        CLI_SERIAL.println(mot_state);
         return;
     }
 
@@ -702,22 +713,22 @@ void _cli_mot_cmd(void*) {
         int state = cmd_ogeti(&_cli_cmd, 2, 0);
 
         if (state < MOT_S_MIN || state > MOT_S_MAX) {
-            Serial.println("~Invalid state argument");
+            CLI_SERIAL.println("~Invalid state argument");
             return;
         }
 
         mot_state = (mot_state_t) state;
-        Serial.println("=!state");
+        CLI_SERIAL.println("=!state");
         return;
     }
 
     if (strcmp(subcmd, "pid") == 0) {
-        Serial.print("=pid ");
-        Serial.println(mot_proc.pid);
+        CLI_SERIAL.print("=pid ");
+        CLI_SERIAL.println(mot_proc.pid);
         return;
     }
 
-    Serial.println("~Unknown mot subcommand");
+    CLI_SERIAL.println("~Unknown mot subcommand");
 }
 
 void _cli_pos_cmd(void*) {
@@ -727,10 +738,10 @@ void _cli_pos_cmd(void*) {
         float x, y;
         pos_get(&x, &y);
 
-        Serial.print("=get ");
-        Serial.print(x);
-        Serial.print(" ");
-        Serial.println(y);
+        CLI_SERIAL.print("=get ");
+        CLI_SERIAL.print(x);
+        CLI_SERIAL.print(" ");
+        CLI_SERIAL.println(y);
         return;
     }
 
@@ -739,19 +750,19 @@ void _cli_pos_cmd(void*) {
         float y = cmd_ogetf(&_cli_cmd, 3, 0);
 
         pos_set(x, y);
-        Serial.println("=!set");
+        CLI_SERIAL.println("=!set");
         return;
     }
 
     if (strcmp(subcmd, "ready") == 0) {
-        Serial.print("=ready ");
-        Serial.println(pos_ready() ? "true" : "false");
+        CLI_SERIAL.print("=ready ");
+        CLI_SERIAL.println(pos_ready() ? "true" : "false");
         return;
     }
 
     if (strcmp(subcmd, "state") == 0) {
-        Serial.print("=state ");
-        Serial.println(pos_state);
+        CLI_SERIAL.print("=state ");
+        CLI_SERIAL.println(pos_state);
         return;
     }
 
@@ -759,61 +770,61 @@ void _cli_pos_cmd(void*) {
         int state = cmd_ogeti(&_cli_cmd, 2, 0);
 
         if (state < POS_S_MIN || state > POS_S_MAX) {
-            Serial.println("~Invalid state argument");
+            CLI_SERIAL.println("~Invalid state argument");
             return;
         }
 
         pos_state = (pos_state_t) state;
-        Serial.println("=!state");
+        CLI_SERIAL.println("=!state");
         return;
     }
 
     if (strcmp(subcmd, "track") == 0) {
-        Serial.print("=track ");
-        Serial.println(pos_trackers);
+        CLI_SERIAL.print("=track ");
+        CLI_SERIAL.println(pos_trackers);
         return;
     }
 
     if (strcmp(subcmd, "!track") == 0) {
         pos_track();
-        Serial.println("=!track");
+        CLI_SERIAL.println("=!track");
         return;
     }
 
     if (strcmp(subcmd, "!untrack") == 0) {
         pos_untrack();
-        Serial.println("=!untrack");
+        CLI_SERIAL.println("=!untrack");
         return;
     }
 
      if (strcmp(subcmd, "pid") == 0) {
-        Serial.print("=pid ");
-        Serial.println(pos_proc.pid);
+        CLI_SERIAL.print("=pid ");
+        CLI_SERIAL.println(pos_proc.pid);
         return;
     }
 
     if (strcmp(subcmd, "pid") == 0) {
-        Serial.print("=pid ");
-        Serial.println(pos_proc.pid);
+        CLI_SERIAL.print("=pid ");
+        CLI_SERIAL.println(pos_proc.pid);
         return;
     }
 
-    Serial.println("~Unknown pos subcommand");
+    CLI_SERIAL.println("~Unknown pos subcommand");
 }
 
 void _cli_move_cmd(void*) {
     const char* subcmd = cmd_ogets(&_cli_cmd, 1, "");
 
     if (strcmp(subcmd, "busy") == 0) {
-        Serial.print("=busy ");
-        Serial.println(move_busy() ? "true" : "false");
+        CLI_SERIAL.print("=busy ");
+        CLI_SERIAL.println(move_busy() ? "true" : "false");
         return;
     }
 
     if (strcmp(subcmd, "drive") == 0) {
         int16_t power = (int16_t) cmd_ogeti(&_cli_cmd, 2, 0);
         move_drive(power);
-        Serial.println("=!drive");
+        CLI_SERIAL.println("=!drive");
         return;
     }
 
@@ -821,14 +832,14 @@ void _cli_move_cmd(void*) {
         int16_t power = (int16_t) cmd_ogeti(&_cli_cmd, 2, 0);
         int32_t distance = cmd_ogeti(&_cli_cmd, 3, 0);
         move_drive_by(power, distance);
-        Serial.println("=!driveby");
+        CLI_SERIAL.println("=!driveby");
         return;
     }
 
     if (strcmp(subcmd, "rotate") == 0) {
         int16_t power = (int16_t) cmd_ogeti(&_cli_cmd, 2, 0);
         move_rotate(power);
-        Serial.println("=!rotate");
+        CLI_SERIAL.println("=!rotate");
         return;
     }
 
@@ -836,25 +847,25 @@ void _cli_move_cmd(void*) {
         uint8_t power = (uint8_t) cmd_ogeti(&_cli_cmd, 2, 0);
         float heading = cmd_ogetf(&_cli_cmd, 3, 0);
         move_rotate_to(power, heading);
-        Serial.println("=!rotateto");
+        CLI_SERIAL.println("=!rotateto");
         return;
     }
 
     if (strcmp(subcmd, "stop") == 0) {
         move_stop();
-        Serial.println("=!stop");
+        CLI_SERIAL.println("=!stop");
         return;
     }
 
     if (strcmp(subcmd, "ready") == 0) {
-        Serial.print("=ready ");
-        Serial.println(move_ready() ? "true" : "false");
+        CLI_SERIAL.print("=ready ");
+        CLI_SERIAL.println(move_ready() ? "true" : "false");
         return;
     }
 
     if (strcmp(subcmd, "state") == 0) {
-        Serial.print("=state ");
-        Serial.println(move_state);
+        CLI_SERIAL.print("=state ");
+        CLI_SERIAL.println(move_state);
         return;
     }
 
@@ -862,20 +873,20 @@ void _cli_move_cmd(void*) {
         int state = cmd_ogeti(&_cli_cmd, 2, 0);
 
         if (state < MOVE_S_MIN || state > MOVE_S_MAX) {
-            Serial.println("~Invalid state argument");
+            CLI_SERIAL.println("~Invalid state argument");
             return;
         }
 
         move_state = (move_state_t) state;
-        Serial.println("=!state");
+        CLI_SERIAL.println("=!state");
         return;
     }
 
     if (strcmp(subcmd, "pid") == 0) {
-        Serial.print("=pid ");
-        Serial.println(move_proc.pid);
+        CLI_SERIAL.print("=pid ");
+        CLI_SERIAL.println(move_proc.pid);
         return;
     }
 
-    Serial.println("~Unknown move subcommand");
+    CLI_SERIAL.println("~Unknown move subcommand");
 }
