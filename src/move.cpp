@@ -108,7 +108,7 @@ void move_csch_tick() {
             if (origin > 180) origin -= 360;
             if (origin < -180) origin += 360;
 
-            if ((origin > 0 && _move_last_heading <= 0 || origin < 0 && _move_last_heading >= 0) && abs(origin) < 90 && abs(_move_last_heading) < 90) {
+            if (((origin > 0 && _move_last_heading <= 0) || (origin < 0 && _move_last_heading >= 0)) && abs(origin) < 90 && abs(_move_last_heading) < 90) {
                 // We've crossed the target heading, so stop
                 move_stop();
             }
